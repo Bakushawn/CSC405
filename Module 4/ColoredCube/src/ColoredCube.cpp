@@ -1,35 +1,37 @@
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <cstdlib>
 #include <ctime>
+#include <cmath>
 #include <vector>
+#include <string>
+
+
+#include <filesystem>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-// function defintion
-void constructSierpinshi(int iterations, float vertices[]);
+// function defintions
+std::string importShader(const std::string& fileName);
 
 // settings
 const unsigned int SCR_WIDTH = 1440;
 const unsigned int SCR_HEIGHT = 1080;
 
-const char *vertexShaderSource = "#version 330 core\n"
-    "layout (location = 0) in vec3 aPos;\n"
-    "void main()\n"
-    "{\n"
-    "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-    "   gl_PointSize =   5.0;\n"
-    "}\0";
-
-const char *fragmentShaderSource = "#version 330 core\n"
-    "out vec4 FragColor;\n"
-    "void main()\n"
-    "{\n"
-    "    FragColor = vec4(0.21f, 0.0f, 0.25f, 1.0f);\n"
-    "}\0"; 
-
 int main(void)
 {
+    // loading shadercode (OpenGL expects c style strings)
+    std::string VertexShaderFileName = std::filesystem::current_path().string() + "\\src\\Vertex.vert";
+    std::string fragmentShaderFileName = std::filesystem::current_path().string() + "\\src\\Fragment.frag";
+
+    std::string vss = importShader(VertexShaderFileName);
+    std::string fss = importShader(fragmentShaderFileName);
+
+    const char* vertexShaderSource = vss.c_str();
+    const char* fragmentShaderSource = fss.c_str();
+
     // seeding random function
     srand(static_cast<unsigned int>(time(0)));
 
@@ -37,7 +39,7 @@ int main(void)
     // initialize GLFW
     GLFWwindow* window;
 
-    // get out here if GLFW don't do
+    // Ensure GLFW exists
     if (!glfwInit())
         return -1;
 
@@ -45,7 +47,7 @@ int main(void)
     window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Hello World", NULL, NULL);
     if (!window)
     {
-        std::cout << "Damn bro. GLFW didn't work" << std::endl;
+        std::cout << "ERROR: GLFW didn't create a window" << std::endl;
         glfwTerminate();
         return -1;
     }
@@ -115,9 +117,11 @@ int main(void)
 
     /* building and creating buffers*/
 
-    int iterations = 10000;
-    float vertices[iterations * 3];
-    constructSierpinshi(iterations, vertices);
+    float vertices[] = {
+        -0.5f, -0.5f, 0.0f,
+        0.5f, -0.5f, 0.0f,
+        0.0f,  0.5f, 0.0f
+    };
 
     // create a Vertex Buffer Object and Vertex Attribute Object to send to the GPU
     unsigned int VBO, VAO;
@@ -146,9 +150,14 @@ int main(void)
         glClear(GL_COLOR_BUFFER_BIT);
 
         // Draw our triangle
+        float timeValue = glfwGetTime();
+        float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
+        int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
         glUseProgram(shaderProgram);
+        glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
         glBindVertexArray(VAO);
-        glDrawArrays(GL_POINTS, 0, iterations);
+        //glDrawArrays(GL_POINTS, 0, 3);
+        glDrawArrays(GL_TRIANGLES,0,3);
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
@@ -167,55 +176,27 @@ int main(void)
     return 0;
 }
 
-void constructSierpinshi(int iterations, float vertices[]){
-    // picking an actual random initial point is hard so intial point is 0,0 for now
-    float Px = 0.0f;
-    float Py = 0.0f;
-    
-    // bounding triangle vertices
-    float v1x = -0.5f;
-    float v1y = -0.5f;
-    float v2x =  0.0f;
-    float v2y =  0.5f;
-    float v3x =  0.5f;
-    float v3y = -0.5f;
-    
-    // shoving bounding triangle in first three of buffer
-    vertices[0] = v1x;
-    vertices[1] = v1y;
-    vertices[2] = 0.0f; //z-coord
-    vertices[3] = v2x;
-    vertices[4] = v2y;
-    vertices[5] = 0.0f; //z-coord
-    vertices[6] = v3x;
-    vertices[7] = v3y;
-    vertices[8] = 0.0f; //z-coord
+std::string importShader(const std::string& fileName){
+    std::ifstream file;
+    std::string shaderCode;
 
-    int vertex = 0;
-    int offset = 9; // offset to jump past bounding triangle
-    for(int i = 0; i < iterations; i++){
-        // choose random vertex of bounding triangle
-        vertex = (rand() % 3) + 1;
-        switch(vertex){
-            // find midpoint between working point and randomly chosen vertex
-            case 2:
-                Px = (Px + v2x)/2;
-                Py = (Py + v2y)/2;
-            break;
-            case 3:
-                Px = (Px + v3x)/2;
-                Py = (Py + v3y)/2;
-            break;
-            default:
-                Px = (Px + v1x)/2;
-                Py = (Py + v1y)/2;
-        }
-        
-        // mark midpoint
-        vertices[(i * 3) + offset] = Px;
-        vertices[(i * 3) + 1 + offset] = Py;
-        vertices[(i * 3) + 2 + offset] = 0.0f; // staying 2D so z axis needs to be zero
+    // Ensure ifstream objects can throw exceptions
+    file.exceptions (std::ifstream::failbit | std::ifstream::badbit);
+    try {
+        // Open file
+        file.open(fileName);
+        std::stringstream shaderStream;
+
+        // Read file's buffer contents into streams
+        shaderStream << file.rdbuf();
+
+        // Close file handler
+        file.close();
+
+        // Convert stream into string
+        shaderCode = shaderStream.str();
+    } catch (std::ifstream::failure& e) {
+        std::cerr << "ERROR: SHADERFILE FAILED TO READ: " << fileName << std::endl;
     }
-
-
+    return shaderCode; 
 }
