@@ -1,0 +1,31 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "CMake: Debug OpenGL",
+            "type": "cppdbg",
+            "request": "launch",
+            "project": "CMakeLists.txt",
+            "projectTarget": "SierpinskiGasket", // Match your add_executable name
+            "program": "${command:cmake.launchTargetPath}",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "PATH",
+                    "value": "${env:PATH};${workspaceFolder}/build"
+                }
+            ],
+            "externalConsole": false,
+            "MIMode": "gdb", // Use "cppvsdbg" if using Visual Studio compiler
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ]
+}

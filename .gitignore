@@ -39,3 +39,13 @@
 
 # debug information files
 *.dwo
+
+# Ignore Build Folders
+**/build/
+**/lib/
+OpenGLLibraries
+
+# Ignore Misc Homework Assignment files
+*.docx
+*.zip
+*.png
