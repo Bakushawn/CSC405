@@ -12,17 +12,24 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "Shader.h"
 
 
-// function defintions
+// function defin-tions
 std::string importShader(const std::string& fileName);
+void processInput(GLFWwindow *window);
 
 // settings
 const unsigned int SCR_WIDTH = 1440;
 const unsigned int SCR_HEIGHT = 1080;
-const std::string PROJECT_DIRECTORY = std::filesystem::current_path().string();
+const unsigned int STRIDE = 3;
+
+//const std::string PROJECT_DIRECTORY = std::filesystem::current_path().string();
+const std::string PROJECT_DIRECTORY = "C:\\Users\\Shawn\\OneDrive\\Documents\\CSUGlobal\\CSC405\\Module 4\\ColoredCube" ;
 
 int main(void)
 {
@@ -54,16 +61,57 @@ int main(void)
         return -1;
     }
 
+    // Creating and building shaders
     std::string VertexPath = PROJECT_DIRECTORY + "\\shaders\\Vertex.vert";
     std::string FragmentPath = PROJECT_DIRECTORY + "\\shaders\\Fragment.frag";
     Shader CubeShader(VertexPath.c_str(),FragmentPath.c_str()); //takes in c-style strings
 
-    /* building and creating buffers*/
+    // enabling depth test
+    glEnable(GL_DEPTH_TEST);
 
+    // building a cube
     float vertices[] = {
-        -0.5f, -0.5f, 0.0f,
-        0.5f, -0.5f, 0.0f,
-        0.0f,  0.5f, 0.0f
+        -0.5f, -0.5f, -0.5f,
+         0.5f, -0.5f, -0.5f,
+         0.5f,  0.5f, -0.5f,
+         0.5f,  0.5f, -0.5f,
+        -0.5f,  0.5f, -0.5f,
+        -0.5f, -0.5f, -0.5f,
+
+        -0.5f, -0.5f,  0.5f,
+         0.5f, -0.5f,  0.5f,
+         0.5f,  0.5f,  0.5f,
+         0.5f,  0.5f,  0.5f,
+        -0.5f,  0.5f,  0.5f,
+        -0.5f, -0.5f,  0.5f,
+
+        -0.5f,  0.5f,  0.5f,
+        -0.5f,  0.5f, -0.5f,
+        -0.5f, -0.5f, -0.5f,
+        -0.5f, -0.5f, -0.5f,
+        -0.5f, -0.5f,  0.5f,
+        -0.5f,  0.5f,  0.5f,
+
+         0.5f,  0.5f,  0.5f,
+         0.5f,  0.5f, -0.5f,
+         0.5f, -0.5f, -0.5f,
+         0.5f, -0.5f, -0.5f,
+         0.5f, -0.5f,  0.5f,
+         0.5f,  0.5f,  0.5f,
+
+        -0.5f, -0.5f, -0.5f,
+         0.5f, -0.5f, -0.5f,
+         0.5f, -0.5f,  0.5f,
+         0.5f, -0.5f,  0.5f,
+        -0.5f, -0.5f,  0.5f,
+        -0.5f, -0.5f, -0.5f,
+
+        -0.5f,  0.5f, -0.5f,
+         0.5f,  0.5f, -0.5f,
+         0.5f,  0.5f,  0.5f,
+         0.5f,  0.5f,  0.5f,
+        -0.5f,  0.5f,  0.5f,
+        -0.5f,  0.5f, -0.5f
     };
 
     // create a Vertex Buffer Object and Vertex Attribute Object to send to the GPU
@@ -78,33 +126,50 @@ int main(void)
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    // specify how Vertex buffer data is formatted (32bit, positions have 3 values, and tightly packed)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    // index of 0, Take off alpha channel, datatype, Stride, pointer
+    glVertexAttribPointer(0, STRIDE, GL_FLOAT, GL_FALSE, STRIDE * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);  
 
     // enabling point size to be changed by vertex renderer
     glEnable(GL_PROGRAM_POINT_SIZE);
 
+    CubeShader.activate();
+
     /* rendering time baby!*/
     while (!glfwWindowShouldClose(window))
     {
+        // input
+        processInput(window);
         // Black Background
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClearColor(0.0f, 0.12f, 0.23f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Activate shader
         CubeShader.activate();
+        
+        //----------------render the box
 
-        // Draw our triangle
-        float timeValue = glfwGetTime();
-        float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
-        float redValue = (cos(timeValue) / 2.0f) + 0.5f;
+        // creating transformations
+        glm::mat4 model          = glm::mat4(1.0f); // identity matrix
+        glm::mat4 projection     = glm::mat4(1.0f);
+        glm::mat4 view           = glm::mat4(1.0f);
 
-        int vertexColorLocation = glGetUniformLocation(CubeShader.ID, "ourColor");
-        glUniform4f(vertexColorLocation, redValue, greenValue, 0.0f, 1.0f);
+        // set box color
+        glm::vec4 boxColor = glm::vec4(0.35f, 0.0f, 0.5f, 1.0f);
+        CubeShader.setVec4("boxColor", boxColor);
+        
+        model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.5f, 1.0f, 0.5f));
+        view  = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+        projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+
+        // pass them to the shaders (3 different ways)
+        CubeShader.setMat4("model", model);
+        CubeShader.setMat4("view", view);
+        CubeShader.setMat4("projection", projection);
+
+        // render box
         glBindVertexArray(VAO);
-        //glDrawArrays(GL_POINTS, 0, 3);
-        glDrawArrays(GL_TRIANGLES,0,3);
+        glDrawArrays(GL_TRIANGLES, 0, sizeof(vertices) / (sizeof(float) * STRIDE));
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
@@ -120,4 +185,10 @@ int main(void)
     // terminate the window
     glfwTerminate();
     return 0;
+}
+
+void processInput(GLFWwindow *window)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
 }
