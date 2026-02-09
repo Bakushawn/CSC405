@@ -13,26 +13,19 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include "Shader.h"
+
+
 // function defintions
 std::string importShader(const std::string& fileName);
 
 // settings
 const unsigned int SCR_WIDTH = 1440;
 const unsigned int SCR_HEIGHT = 1080;
+const std::string PROJECT_DIRECTORY = std::filesystem::current_path().string();
 
 int main(void)
 {
-    // loading shadercode (OpenGL expects c style strings)
-    std::string VertexShaderFileName = std::filesystem::current_path().string() + "\\src\\Vertex.vert";
-    std::string fragmentShaderFileName = std::filesystem::current_path().string() + "\\src\\Fragment.frag";
-
-    std::string vss = importShader(VertexShaderFileName);
-    std::string fss = importShader(fragmentShaderFileName);
-
-    const char* vertexShaderSource = vss.c_str();
-    const char* fragmentShaderSource = fss.c_str();
-
-    // seeding random function
     srand(static_cast<unsigned int>(time(0)));
 
     /* creating GLFW window*/
@@ -61,59 +54,9 @@ int main(void)
         return -1;
     }
 
-
-    /*------------------- build and compile shaders ---------------------------------------*/
-    // create our vertex shader object
-    unsigned int vertexShader; // this is the ID of the vertex shader
-    vertexShader = glCreateShader(GL_VERTEX_SHADER);
-
-    // Attach source code to vertex shader and compile shader
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-
-    // Status check on our vertex Shader compiler
-    int  success; // success code
-    char infoLog[512]; // error log buffer
-    
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success); // actual code to check shader
-    if(!success){
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        std::cout << "ERROR: VERTEX SHADER COMPILATION FAILED\n" << infoLog << std::endl;
-    }
-
-
-    // create our fragment shader object
-    unsigned int fragmentShader;
-    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-
-    // sanity check on fragment shader
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success); // actual code to check shader
-    if(!success){
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        std::cout << "ERROR: FRAGMENT SHADER COMPILATION FAILED\n" << infoLog << std::endl;
-    }
-    // now that we have shaders. it is time to combine them into a program and link them
-    // create shader program
-    unsigned int shaderProgram;
-    shaderProgram = glCreateProgram();
-
-    // attach and link vertex and fragment shaders. ORDER MATTERS!!!!
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-
-    // sanity check on shader program
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if(!success) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        std::cout << "ERROR: SHADER PROGRAM FAILED\n" << infoLog << std::endl;
-    }
-
-    // shaders are linked and attached so we can delete them now
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);  
+    std::string VertexPath = PROJECT_DIRECTORY + "\\shaders\\Vertex.vert";
+    std::string FragmentPath = PROJECT_DIRECTORY + "\\shaders\\Fragment.frag";
+    Shader CubeShader(VertexPath.c_str(),FragmentPath.c_str()); //takes in c-style strings
 
     /* building and creating buffers*/
 
@@ -149,12 +92,16 @@ int main(void)
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        // Activate shader
+        CubeShader.activate();
+
         // Draw our triangle
         float timeValue = glfwGetTime();
         float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
-        int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
-        glUseProgram(shaderProgram);
-        glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+        float redValue = (cos(timeValue) / 2.0f) + 0.5f;
+
+        int vertexColorLocation = glGetUniformLocation(CubeShader.ID, "ourColor");
+        glUniform4f(vertexColorLocation, redValue, greenValue, 0.0f, 1.0f);
         glBindVertexArray(VAO);
         //glDrawArrays(GL_POINTS, 0, 3);
         glDrawArrays(GL_TRIANGLES,0,3);
@@ -169,34 +116,8 @@ int main(void)
     // Clean up
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
-    glDeleteProgram(shaderProgram);
 
     // terminate the window
     glfwTerminate();
     return 0;
-}
-
-std::string importShader(const std::string& fileName){
-    std::ifstream file;
-    std::string shaderCode;
-
-    // Ensure ifstream objects can throw exceptions
-    file.exceptions (std::ifstream::failbit | std::ifstream::badbit);
-    try {
-        // Open file
-        file.open(fileName);
-        std::stringstream shaderStream;
-
-        // Read file's buffer contents into streams
-        shaderStream << file.rdbuf();
-
-        // Close file handler
-        file.close();
-
-        // Convert stream into string
-        shaderCode = shaderStream.str();
-    } catch (std::ifstream::failure& e) {
-        std::cerr << "ERROR: SHADERFILE FAILED TO READ: " << fileName << std::endl;
-    }
-    return shaderCode; 
 }

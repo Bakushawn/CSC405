@@ -11,11 +11,16 @@ FetchContent_MakeAvailable(glfw)
 
 
 # executables
-add_executable(ColoredCube src/ColoredCube.cpp src/glad.c)
+add_executable(ColoredCube src/ColoredCube.cpp src/glad.c src/Shader.cpp)
 
 # linking libraries
 target_link_libraries(ColoredCube glfw opengl32 gdi32 user32 shell32)
-target_include_directories(ColoredCube PRIVATE lib/glad/include)
+target_include_directories(ColoredCube 
+    PUBLIC
+        "${CMAKE_SOURCE_DIR}/include"
+    PRIVATE 
+        lib/glad/include/
+        )
 
 enable_testing()
 add_test(NAME VisualTesting COMMAND ColoredCube --test)
