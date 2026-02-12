@@ -158,7 +158,7 @@ int main(void)
         glm::vec4 boxColor = glm::vec4(0.35f, 0.0f, 0.5f, 1.0f);
         CubeShader.setVec4("boxColor", boxColor);
         
-        model = glm::rotate(model, (float)glfwGetTime() * 0.1f , glm::vec3(1.0f, 1.0f, 0.0f));
+        model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(1.0f, 1.0f, 0.0f));
         view  = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
         projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
