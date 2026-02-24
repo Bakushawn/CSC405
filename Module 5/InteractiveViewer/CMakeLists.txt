@@ -22,14 +22,14 @@ FetchContent_MakeAvailable(glm)
 
 
 # executables
-add_executable(InteractiveViewer src/InteractiveViewer.cpp src/glad.c src/Shader.cpp)
+add_executable(InteractiveViewer src/InteractiveViewer.cpp src/glad.c src/Shader.cpp src/stb_image.cpp)
 
 # linking libraries
 target_link_libraries(InteractiveViewer glm glfw opengl32 gdi32 user32 shell32)
 target_include_directories(InteractiveViewer
     PUBLIC
         "${CMAKE_SOURCE_DIR}/include"
-    PRIVATE 
+    PRIVATE
         lib/glad/include/
         )
 

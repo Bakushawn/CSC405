@@ -12,21 +12,25 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "stb_image.h"
+
 #include "Shader.h"
 
 
-// function defin-tions
+// function definitions
 std::string importShader(const std::string& fileName);
 void processInput(GLFWwindow *window);
 
 // settings
 const unsigned int SCR_WIDTH = 1440;
 const unsigned int SCR_HEIGHT = 1080;
-const unsigned int STRIDE = 3;
+const unsigned int STRIDE = 5;
+const unsigned int VERTEX_CHANNELS = 3;
 
 const std::string PROJECT_DIRECTORY = std::filesystem::current_path().string();
 //const std::string PROJECT_DIRECTORY = "C:\\Users\\Shawn\\OneDrive\\Documents\\CSUGlobal\\CSC405\\Module 5\\InteractiveViewer" ;
@@ -69,49 +73,56 @@ int main(void)
     // enabling depth test
     glEnable(GL_DEPTH_TEST);
 
+
+    // texture 
+    float textureCoords[] = {
+        0.0f, 0.0f,  // lower-left corner  
+        1.0f, 0.0f,  // lower-right corner
+        0.5f, 1.0f   // top-center corner
+    };
     // building a cube
     float vertices[] = {
-        -0.5f, -0.5f, -0.5f,
-         0.5f, -0.5f, -0.5f,
-         0.5f,  0.5f, -0.5f,
-         0.5f,  0.5f, -0.5f,
-        -0.5f,  0.5f, -0.5f,
-        -0.5f, -0.5f, -0.5f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
 
-        -0.5f, -0.5f,  0.5f,
-         0.5f, -0.5f,  0.5f,
-         0.5f,  0.5f,  0.5f,
-         0.5f,  0.5f,  0.5f,
-        -0.5f,  0.5f,  0.5f,
-        -0.5f, -0.5f,  0.5f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
 
-        -0.5f,  0.5f,  0.5f,
-        -0.5f,  0.5f, -0.5f,
-        -0.5f, -0.5f, -0.5f,
-        -0.5f, -0.5f, -0.5f,
-        -0.5f, -0.5f,  0.5f,
-        -0.5f,  0.5f,  0.5f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
 
-         0.5f,  0.5f,  0.5f,
-         0.5f,  0.5f, -0.5f,
-         0.5f, -0.5f, -0.5f,
-         0.5f, -0.5f, -0.5f,
-         0.5f, -0.5f,  0.5f,
-         0.5f,  0.5f,  0.5f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
 
-        -0.5f, -0.5f, -0.5f,
-         0.5f, -0.5f, -0.5f,
-         0.5f, -0.5f,  0.5f,
-         0.5f, -0.5f,  0.5f,
-        -0.5f, -0.5f,  0.5f,
-        -0.5f, -0.5f, -0.5f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
 
-        -0.5f,  0.5f, -0.5f,
-         0.5f,  0.5f, -0.5f,
-         0.5f,  0.5f,  0.5f,
-         0.5f,  0.5f,  0.5f,
-        -0.5f,  0.5f,  0.5f,
-        -0.5f,  0.5f, -0.5f
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
     };
 
     // create a Vertex Buffer Object and Vertex Attribute Object to send to the GPU
@@ -126,20 +137,57 @@ int main(void)
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    // index of 0, Take off alpha channel, datatype, Stride, pointer
-    glVertexAttribPointer(0, STRIDE, GL_FLOAT, GL_FALSE, STRIDE * sizeof(float), (void*)0);
+    // parameters: index of 0, Take off alpha channel, datatype, Stride, pointer
+    // Pointing to positions
+    glVertexAttribPointer(0, VERTEX_CHANNELS, GL_FLOAT, GL_FALSE, STRIDE * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);  
+
+    // pointing to coords
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, STRIDE * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     // enabling point size to be changed by vertex renderer
     glEnable(GL_PROGRAM_POINT_SIZE);
 
+    // Loading and creating textures
+
+    unsigned int texture1;
+
+    glGenTextures(1,&texture1);
+    glBindTexture(GL_TEXTURE_2D, texture1);
+    
+    // set the texture wrapping parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    
+    // set texture filtering parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // load image and create the texture + mipmap
+    int textureWidth, textureHeight, nrChannels;
+    std::string texture1Path = PROJECT_DIRECTORY + "\\shaders\\Textures\\StarshipTroopers.jpg";
+    unsigned char *imageData = stbi_load(texture1Path.c_str(), &textureWidth, &textureHeight, &nrChannels, 0);
+
+    // check for loaded
+
+    if(imageData){
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, textureWidth, textureHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, imageData);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    } else{
+        std::cout << "ERROR: Texture was not loaded" << std::endl;
+    }
+    stbi_image_free(imageData);
+
     CubeShader.activate();
+    CubeShader.setInt("texture1", 0);
 
     /* rendering time baby!*/
     while (!glfwWindowShouldClose(window))
     {
         // input
         processInput(window);
+
         // Black Background
         glClearColor(0.0f, 0.12f, 0.23f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
