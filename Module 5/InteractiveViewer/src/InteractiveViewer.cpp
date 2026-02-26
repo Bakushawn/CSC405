@@ -24,7 +24,7 @@
 
 // function definitions
 std::string importShader(const std::string& fileName);
-void processInput(GLFWwindow *window);
+void processInput(GLFWwindow *window, glm::vec3 &cameraPos, glm::vec3 cameraFront, glm::vec3 cameraUp);
 
 // settings
 const unsigned int SCR_WIDTH = 1440;
@@ -168,25 +168,37 @@ int main(void)
     int textureWidth, textureHeight, nrChannels;
     std::string texture1Path = PROJECT_DIRECTORY + "\\shaders\\Textures\\StarshipTroopers.jpg";
     unsigned char *imageData = stbi_load(texture1Path.c_str(), &textureWidth, &textureHeight, &nrChannels, 0);
+    
 
     // check for loaded
-
     if(imageData){
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, textureWidth, textureHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, imageData);
         glGenerateMipmap(GL_TEXTURE_2D);
     } else{
         std::cout << "ERROR: Texture was not loaded" << std::endl;
     }
+    // free data we do not need anymore
     stbi_image_free(imageData);
 
+    // passing texture into shaders
     CubeShader.activate();
     CubeShader.setInt("texture1", 0);
+
+    // passing projection into shaders
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+    CubeShader.setMat4("projection", projection);
+
+    // defining camera
+    glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f,  3.0f);
+    glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+    glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
+
 
     /* rendering time baby!*/
     while (!glfwWindowShouldClose(window))
     {
         // input
-        processInput(window);
+        processInput(window, cameraPos, cameraFront, cameraUp);
 
         // Black Background
         glClearColor(0.0f, 0.12f, 0.23f, 1.0f);
@@ -199,21 +211,20 @@ int main(void)
 
         // creating transformations
         glm::mat4 model          = glm::mat4(1.0f); // identity matrix
-        glm::mat4 projection     = glm::mat4(1.0f);
         glm::mat4 view           = glm::mat4(1.0f);
-
-        // set box color
-        glm::vec4 boxColor = glm::vec4(0.35f, 0.0f, 0.5f, 1.0f);
-        CubeShader.setVec4("boxColor", boxColor);
         
-        model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(1.0f, 1.0f, 0.0f));
-        view  = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-        projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        // Camera definition (spinning in a circle)
+        float radius = 10.f;
+        float camX = static_cast<float>(sin(glfwGetTime()) * radius);
+        float camZ = static_cast<float>(cos(glfwGetTime()) * radius);
 
-        // pass them to the shaders (3 different ways)
-        CubeShader.setMat4("model", model);
+        view = glm::lookAt( cameraPos, cameraPos + cameraFront, cameraUp);
+
         CubeShader.setMat4("view", view);
-        CubeShader.setMat4("projection", projection);
+
+        // render the box
+
+        CubeShader.setMat4("model", model);
 
         // render box
         glBindVertexArray(VAO);
@@ -235,8 +246,17 @@ int main(void)
     return 0;
 }
 
-void processInput(GLFWwindow *window)
+void processInput(GLFWwindow *window, glm::vec3 &cameraPos, glm::vec3 cameraFront, glm::vec3 cameraUp)
 {
+    const float cameraSpeed = 0.005f;
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        cameraPos += cameraSpeed * cameraFront;
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        cameraPos -= cameraSpeed * cameraFront;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
 }
