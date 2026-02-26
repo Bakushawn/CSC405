@@ -24,13 +24,17 @@
 
 // function definitions
 std::string importShader(const std::string& fileName);
-void processInput(GLFWwindow *window, glm::vec3 &cameraPos, glm::vec3 cameraFront, glm::vec3 cameraUp);
+void processInput(GLFWwindow *window, glm::vec3 &cameraPos, glm::vec3 cameraFront, glm::vec3 cameraUp, float deltaTime);
 
 // settings
 const unsigned int SCR_WIDTH = 1440;
 const unsigned int SCR_HEIGHT = 1080;
 const unsigned int STRIDE = 5;
 const unsigned int VERTEX_CHANNELS = 3;
+
+// delta time
+float deltaTime = 0.0f;
+float lastframe = 0.0f;
 
 const std::string PROJECT_DIRECTORY = std::filesystem::current_path().string();
 //const std::string PROJECT_DIRECTORY = "C:\\Users\\Shawn\\OneDrive\\Documents\\CSUGlobal\\CSC405\\Module 5\\InteractiveViewer" ;
@@ -82,13 +86,15 @@ int main(void)
     };
     // building a cube
     float vertices[] = {
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+        // back face
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // vertex (x,y,z), texture (x,y)
          0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
          0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
          0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
         -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
         -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
 
+        // front face
         -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
          0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
          0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
@@ -96,20 +102,23 @@ int main(void)
         -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
         -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
 
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        // left face
+        -0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
 
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        // right face
+         0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
          0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
          0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
 
+         // bottom face
         -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
          0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
          0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
@@ -117,6 +126,7 @@ int main(void)
         -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
         -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
 
+        // top face
         -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
          0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
          0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
@@ -167,6 +177,7 @@ int main(void)
     // load image and create the texture + mipmap
     int textureWidth, textureHeight, nrChannels;
     std::string texture1Path = PROJECT_DIRECTORY + "\\shaders\\Textures\\StarshipTroopers.jpg";
+    stbi_set_flip_vertically_on_load(true); // flip the image
     unsigned char *imageData = stbi_load(texture1Path.c_str(), &textureWidth, &textureHeight, &nrChannels, 0);
     
 
@@ -189,7 +200,7 @@ int main(void)
     CubeShader.setMat4("projection", projection);
 
     // defining camera
-    glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f,  3.0f);
+    glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f,  5.0f);
     glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
     glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
 
@@ -197,8 +208,12 @@ int main(void)
     /* rendering time baby!*/
     while (!glfwWindowShouldClose(window))
     {
+        // calculating delta time
+        float currentFrame = glfwGetTime();
+        deltaTime = currentFrame - lastframe;
+        lastframe = currentFrame;
         // input
-        processInput(window, cameraPos, cameraFront, cameraUp);
+        processInput(window, cameraPos, cameraFront, cameraUp , deltaTime);
 
         // Black Background
         glClearColor(0.0f, 0.12f, 0.23f, 1.0f);
@@ -246,17 +261,29 @@ int main(void)
     return 0;
 }
 
-void processInput(GLFWwindow *window, glm::vec3 &cameraPos, glm::vec3 cameraFront, glm::vec3 cameraUp)
+void processInput(GLFWwindow *window, glm::vec3 &cameraPos, glm::vec3 cameraFront, glm::vec3 cameraUp, float deltaTime)
 {
-    const float cameraSpeed = 0.005f;
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    const float cameraSpeed = 0.5f * deltaTime;
+
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS){
         glfwSetWindowShouldClose(window, true);
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    }
+        
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS){
         cameraPos += cameraSpeed * cameraFront;
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        //cameraPos += cameraSpeed * cameraUp;
+    }
+        
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS){
         cameraPos -= cameraSpeed * cameraFront;
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        //cameraPos -= cameraSpeed * cameraUp;
+    }
+        
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS){
         cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS){
         cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    }
+        
 }
