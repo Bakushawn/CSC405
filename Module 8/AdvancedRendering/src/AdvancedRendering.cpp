@@ -29,8 +29,7 @@ const unsigned int SCR_WIDTH = 1440;
 const unsigned int SCR_HEIGHT = 1080;
 const unsigned int STRIDE = 3;
 
-//const std::string PROJECT_DIRECTORY = std::filesystem::current_path().string();
-const std::string PROJECT_DIRECTORY = "C:\\Users\\Shawn\\OneDrive\\Documents\\CSUGlobal\\CSC405\\Module 4\\ColoredCube" ;
+const std::string PROJECT_DIRECTORY = std::filesystem::current_path().string();
 
 int main(void)
 {
@@ -78,8 +77,15 @@ int main(void)
     Sphere sphere1(point1, point2, point3, point4, 4);
 
     // building a cube
-    float vertices[sphere1.flatVertexArray.size()];
-    std::copy(sphere1.flatVertexArray.begin(), sphere1.flatVertexArray.end(), vertices);
+    //float vertices[sphere1.flatVertexArray.size()];
+
+    float vertices[] = {
+        0.5f, 0.5f, 0.0f,
+        0.0f, 0.5f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, 0.0f
+    };
+    // std::copy(sphere1.flatVertexArray.begin(), sphere1.flatVertexArray.end(), vertices);
 
     // create a Vertex Buffer Object and Vertex Attribute Object to send to the GPU
     unsigned int VBO, VAO;
@@ -126,9 +132,9 @@ int main(void)
         glm::vec4 boxColor = glm::vec4(0.35f, 0.0f, 0.5f, 1.0f);
         CubeShader.setVec4("boxColor", boxColor);
         
-        model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(1.0f, 1.0f, 0.0f));
+        //model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(1.0f, 1.0f, 0.0f));
         view  = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-        projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 1.0f, 100.0f);
 
         // pass them to the shaders (3 different ways)
         CubeShader.setMat4("model", model);
@@ -137,7 +143,7 @@ int main(void)
 
         // render box
         glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, sizeof(vertices) / (sizeof(float) * STRIDE));
+        glDrawArrays(GL_LINE_LOOP, 0, sizeof(vertices) / (sizeof(float) * STRIDE));
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
