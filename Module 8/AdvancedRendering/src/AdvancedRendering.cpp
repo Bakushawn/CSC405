@@ -12,24 +12,32 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "stb_image.h"
+
 #include "Shader.h"
-#include "Sphere.h"
 
 
-// function defin-tions
+// function definitions
 std::string importShader(const std::string& fileName);
-void processInput(GLFWwindow *window);
+void processInput(GLFWwindow *window, glm::vec3 &cameraPos, glm::vec3 cameraFront, glm::vec3 cameraUp, float deltaTime);
 
 // settings
 const unsigned int SCR_WIDTH = 1440;
 const unsigned int SCR_HEIGHT = 1080;
-const unsigned int STRIDE = 3;
+const unsigned int STRIDE = 5;
+const unsigned int VERTEX_CHANNELS = 3;
+
+// delta time
+float deltaTime = 0.0f;
+float lastframe = 0.0f;
 
 const std::string PROJECT_DIRECTORY = std::filesystem::current_path().string();
+//const std::string PROJECT_DIRECTORY = "C:\\Users\\Shawn\\OneDrive\\Documents\\CSUGlobal\\CSC405\\Module 5\\InteractiveViewer" ;
 
 int main(void)
 {
@@ -69,23 +77,63 @@ int main(void)
     // enabling depth test
     glEnable(GL_DEPTH_TEST);
 
-    std::vector<float> point1 = {  0.0f,  0.0f,  1.0f };
-    std::vector<float> point2 = {  0.0f,  0.9f, -0.3f };
-    std::vector<float> point3 = { -0.8f, -0.4f, -0.3f };
-    std::vector<float> point4 = {  0.8f, -0.4f, -0.3f };
 
-    Sphere sphere1(point1, point2, point3, point4, 4);
-
-    // building a cube
-    //float vertices[sphere1.flatVertexArray.size()];
-
-    float vertices[] = {
-        0.5f, 0.5f, 0.0f,
-        0.0f, 0.5f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-        1.0f, 1.0f, 0.0f
+    // texture 
+    float textureCoords[] = {
+        0.0f, 0.0f,  // lower-left corner  
+        1.0f, 0.0f,  // lower-right corner
+        0.5f, 1.0f   // top-center corner
     };
-    // std::copy(sphere1.flatVertexArray.begin(), sphere1.flatVertexArray.end(), vertices);
+    // building a cube
+    float vertices[] = {
+        // back face
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // vertex (x,y,z), texture (x,y)
+         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+        // front face
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+        // left face
+        -0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+
+        // right face
+         0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+
+         // bottom face
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+        // top face
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+    };
 
     // create a Vertex Buffer Object and Vertex Attribute Object to send to the GPU
     unsigned int VBO, VAO;
@@ -99,21 +147,74 @@ int main(void)
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    // index of 0, Take off alpha channel, datatype, Stride, pointer
-    glVertexAttribPointer(0, STRIDE, GL_FLOAT, GL_FALSE, STRIDE * sizeof(float), (void*)0);
+    // parameters: index of 0, Take off alpha channel, datatype, Stride, pointer
+    // Pointing to positions
+    glVertexAttribPointer(0, VERTEX_CHANNELS, GL_FLOAT, GL_FALSE, STRIDE * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);  
+
+    // pointing to coords
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, STRIDE * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     // enabling point size to be changed by vertex renderer
     glEnable(GL_PROGRAM_POINT_SIZE);
 
-    CubeShader.activate();
+    // Loading and creating textures
 
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    unsigned int texture1;
+
+    glGenTextures(1,&texture1);
+    glBindTexture(GL_TEXTURE_2D, texture1);
+    
+    // set the texture wrapping parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    
+    // set texture filtering parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // load image and create the texture + mipmap
+    int textureWidth, textureHeight, nrChannels;
+    std::string texture1Path = PROJECT_DIRECTORY + "\\shaders\\Textures\\StarshipTroopers.jpg";
+    stbi_set_flip_vertically_on_load(true); // flip the image
+    unsigned char *imageData = stbi_load(texture1Path.c_str(), &textureWidth, &textureHeight, &nrChannels, 0);
+    
+
+    // check for loaded
+    if(imageData){
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, textureWidth, textureHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, imageData);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    } else{
+        std::cout << "ERROR: Texture was not loaded" << std::endl;
+    }
+    // free data we do not need anymore
+    stbi_image_free(imageData);
+
+    // passing texture into shaders
+    CubeShader.activate();
+    CubeShader.setInt("texture1", 0);
+
+    // passing projection into shaders
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+    CubeShader.setMat4("projection", projection);
+
+    // defining camera
+    glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f,  5.0f);
+    glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+    glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
+
+
     /* rendering time baby!*/
     while (!glfwWindowShouldClose(window))
     {
+        // calculating delta time
+        float currentFrame = glfwGetTime();
+        deltaTime = currentFrame - lastframe;
+        lastframe = currentFrame;
         // input
-        processInput(window);
+        processInput(window, cameraPos, cameraFront, cameraUp , deltaTime);
+
         // Black Background
         glClearColor(0.0f, 0.12f, 0.23f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -125,25 +226,24 @@ int main(void)
 
         // creating transformations
         glm::mat4 model          = glm::mat4(1.0f); // identity matrix
-        glm::mat4 projection     = glm::mat4(1.0f);
         glm::mat4 view           = glm::mat4(1.0f);
-
-        // set box color
-        glm::vec4 boxColor = glm::vec4(0.35f, 0.0f, 0.5f, 1.0f);
-        CubeShader.setVec4("boxColor", boxColor);
         
-        //model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(1.0f, 1.0f, 0.0f));
-        view  = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-        projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 1.0f, 100.0f);
+        // Camera definition (spinning in a circle)
+        float radius = 10.f;
+        float camX = static_cast<float>(sin(glfwGetTime()) * radius);
+        float camZ = static_cast<float>(cos(glfwGetTime()) * radius);
 
-        // pass them to the shaders (3 different ways)
-        CubeShader.setMat4("model", model);
+        view = glm::lookAt( cameraPos, cameraPos + cameraFront, cameraUp);
+
         CubeShader.setMat4("view", view);
-        CubeShader.setMat4("projection", projection);
+
+        // render the box
+
+        CubeShader.setMat4("model", model);
 
         // render box
         glBindVertexArray(VAO);
-        glDrawArrays(GL_LINE_LOOP, 0, sizeof(vertices) / (sizeof(float) * STRIDE));
+        glDrawArrays(GL_TRIANGLES, 0, sizeof(vertices) / (sizeof(float) * STRIDE));
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
@@ -161,8 +261,29 @@ int main(void)
     return 0;
 }
 
-void processInput(GLFWwindow *window)
+void processInput(GLFWwindow *window, glm::vec3 &cameraPos, glm::vec3 cameraFront, glm::vec3 cameraUp, float deltaTime)
 {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    const float cameraSpeed = 0.5f * deltaTime;
+
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS){
         glfwSetWindowShouldClose(window, true);
+    }
+        
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS){
+        cameraPos += cameraSpeed * cameraFront;
+        //cameraPos += cameraSpeed * cameraUp;
+    }
+        
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS){
+        cameraPos -= cameraSpeed * cameraFront;
+        //cameraPos -= cameraSpeed * cameraUp;
+    }
+        
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS){
+        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS){
+        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    }
+        
 }

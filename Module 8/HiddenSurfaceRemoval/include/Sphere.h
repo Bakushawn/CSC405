@@ -29,8 +29,9 @@ class Sphere
     public:
         std::vector<std::vector<float>> vertices;
         std::vector<float> flatVertexArray;
+        std::vector<float> position;
 
         Sphere();
-        Sphere(std::vector<float> point1, std::vector<float> point2, std::vector<float> point3,std::vector<float> point4, int subDivisions);
+        Sphere(std::vector<float> p1, std::vector<float> p2, std::vector<float> p3,std::vector<float> p4, std::vector<float> pos, int subDivisions);
 };
 #endif

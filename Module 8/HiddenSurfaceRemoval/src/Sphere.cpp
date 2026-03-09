@@ -8,16 +8,18 @@ Sphere::Sphere(){
     point2 = { 1.0f, 1.0f, 1.0f };
     point3 = { 0.0f, 1.0f, 1.0f };
     point4 = { 1.0f, 0.0f, 1.0f };
+    position = {0.0f, 0.0f, 0.0f};
 
     generateVertices(0);
     flattenVerticesArray();
 }
 
-Sphere::Sphere(std::vector<float> p1, std::vector<float> p2, std::vector<float> p3,std::vector<float> p4, int subDivisions){
+Sphere::Sphere(std::vector<float> p1, std::vector<float> p2, std::vector<float> p3,std::vector<float> p4, std::vector<float> pos, int subDivisions){
     point1 = p1;
     point2 = p2;
     point3 = p3;
     point4 = p4;
+    position = pos;
 
     generateVertices(subDivisions);
     flattenVerticesArray();

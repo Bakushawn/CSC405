@@ -5,6 +5,7 @@
 #include <ctime>
 #include <cmath>
 #include <vector>
+#include <algorithm>
 #include <string>
 
 
@@ -23,6 +24,7 @@
 // function defin-tions
 std::string importShader(const std::string& fileName);
 void processInput(GLFWwindow *window);
+std::vector<float> PaintersAlgorithm(std::vector<Sphere> Shapes);
 
 // settings
 const unsigned int SCR_WIDTH = 1440;
@@ -70,16 +72,39 @@ int main(void)
     // enabling depth test
     glEnable(GL_DEPTH_TEST);
 
-    std::vector<float> point1 = {  0.0f,  0.0f,  1.0f };
-    std::vector<float> point2 = {  0.0f,  0.9f, -0.3f };
-    std::vector<float> point3 = { -0.8f, -0.4f, -0.3f };
-    std::vector<float> point4 = {  0.8f, -0.4f, -0.3f };
+    std::vector<float> point1  = {  0.0f,  0.0f,  1.0f };
+    std::vector<float> point2  = {  0.0f,  0.9f, -0.3f };
+    std::vector<float> point3  = { -0.8f, -0.4f, -0.3f };
+    std::vector<float> point4  = {  0.8f, -0.4f, -0.3f };
+    std::vector<float> pos1    = {  0.0f,  0.0f,  0.0f };
 
-    Sphere sphere1(point1, point2, point3, point4, 4);
+    std::vector<float> point5  = {  0.0f,  0.0f,  3.0f };
+    std::vector<float> point6  = {  0.0f,  0.9f, -2.3f };
+    std::vector<float> point7  = { -0.8f, -0.4f, -2.3f };
+    std::vector<float> point8  = {  0.8f, -0.4f, -2.3f };
+    std::vector<float> pos2    = {  2.0f,  5.0f, -15.0f};
+
+    std::vector<float> point9  = {  0.0f,  0.0f,  4.0f };
+    std::vector<float> point10 = {  0.0f,  0.9f, -3.3f };
+    std::vector<float> point11 = { -0.8f, -0.4f, -3.3f };
+    std::vector<float> point12 = {  0.8f, -0.4f, -3.3f };
+    std::vector<float> pos3    = { -1.5f, -2.2f, -2.5f };
+
+    Sphere sphere1(point1, point2, point3, point4, pos1, 4);
+    Sphere sphere2(point5, point6, point7, point8, pos2, 2);
+    Sphere sphere3(point9, point10, point11, point12, pos3, 3);
+
+    std::vector<Sphere> Objects;
+    Objects.push_back(sphere1);
+    Objects.push_back(sphere2);
+    Objects.push_back(sphere3);
+
+    std::vector<float> sortedObjectVertices = PaintersAlgorithm(Objects);
 
     // building a cube
-    float vertices[sphere1.flatVertexArray.size()];
-    std::copy(sphere1.flatVertexArray.begin(), sphere1.flatVertexArray.end(), vertices);
+    float vertices[sortedObjectVertices.size()];
+    std::vector<float> objectPositions;
+    std::copy(sortedObjectVertices.begin(), sortedObjectVertices.end(), vertices);
 
     // create a Vertex Buffer Object and Vertex Attribute Object to send to the GPU
     unsigned int VBO, VAO;
@@ -97,7 +122,9 @@ int main(void)
     glVertexAttribPointer(0, STRIDE, GL_FLOAT, GL_FALSE, STRIDE * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);  
 
-    // enabling point size to be changed by vertex renderer
+    // enabling Z-buffer
+    glEnable(GL_DEPTH_TEST); 
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_PROGRAM_POINT_SIZE);
 
     CubeShader.activate();
@@ -126,7 +153,7 @@ int main(void)
         glm::vec4 boxColor = glm::vec4(0.35f, 0.0f, 0.5f, 1.0f);
         CubeShader.setVec4("boxColor", boxColor);
         
-        model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(1.0f, 1.0f, 0.0f));
+        //model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(1.0f, 1.0f, 0.0f));
         view  = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
         projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
@@ -155,8 +182,21 @@ int main(void)
     return 0;
 }
 
-void processInput(GLFWwindow *window)
-{
+void processInput(GLFWwindow *window){
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+}
+
+std::vector<float> PaintersAlgorithm(std::vector<Sphere> Shapes){
+    std::vector<float> PainterBuffer;
+    // sorting the shapes by depth
+    std::sort(Shapes.begin(), Shapes.end(), 
+        [](const Sphere& a, const Sphere& b){ return a.position[2] > b.position[2];});
+    
+    for(Sphere Shape : Shapes){
+        for(float point : Shape.flatVertexArray){
+            PainterBuffer.push_back(point);
+        }
+    }
+    return PainterBuffer;
 }
